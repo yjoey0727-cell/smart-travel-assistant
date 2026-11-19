@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ trip.title }}</title>
+  <style>
+    @page { size: A4; margin: 12mm; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+      color: #172033;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body { background: #fff; }
+    .page { width: 100%; }
+    .cover {
+      min-height: 250mm;
+      page-break-after: always;
+      padding: 18mm 14mm 12mm;
+      background: linear-gradient(145deg, #0f172a 0%, #1e3a5f 58%, #0f766e 100%);
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .cover::after {
+      content: ""; position: absolute; width: 90mm; height: 90mm; border-radius: 50%;
+      background: rgba(255,255,255,.08); right: -20mm; top: -20mm;
+    }
+    .cover .kicker { font-size: 10px; letter-spacing: .28em; color: #93c5fd; text-transform: uppercase; }
+    .cover h1 { font-size: 34px; line-height: 1.3; margin: 32px 0 12px; font-weight: 700; }
+    .cover .sub { font-size: 13px; color: #cbd5e1; line-height: 1.9; }
+    .cover .meta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 34px; }
+    .cover .meta div {
+      border: 1px solid rgba(255,255,255,.22); background: rgba(255,255,255,.08);
+      border-radius: 8px; padding: 9px 12px; font-size: 10px; line-height: 1.5;
+    }
+    .cover .meta b { display: block; font-size: 15px; font-weight: 600; }
+    .cover-days { margin-top: 34px; max-width: 520px; display: flex; flex-direction: column; gap: 7px; }
+    .cover-day { display: grid; grid-template-columns: 58px 1fr auto; gap: 10px; align-items: baseline; border-left: 2px solid rgba(94, 234, 212, .42); padding: 6px 0 6px 12px; }
+    .cover-day span { font-size: 8px; letter-spacing: .12em; color: #5eead4; }
+    .cover-day b { font-size: 12px; font-weight: 600; color: #e2e8f0; }
+    .cover-day small { font-size: 8px; color: #94a3b8; }
+    .cover .bottom { position: absolute; left: 14mm; bottom: 14mm; right: 14mm; font-size: 9px; color: #94a3b8; line-height: 1.7; }
+    .section { padding: 8mm 0 0; }
+    .section-title { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #172033; padding-bottom: 5px; margin-bottom: 10px; }
+    .section-title h2 { margin: 0; font-size: 17px; letter-spacing: .04em; }
+    .section-title span { color: #64748b; font-size: 8.5px; letter-spacing: .12em; }
+    .overview { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: 9px 0 12px; }
+    .stat { border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px; background: #f8fafc; }
+    .stat small { color: #64748b; font-size: 8.5px; display: block; }
+    .stat b { font-size: 15px; display: block; margin-top: 4px; }
+    .map-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; background: #f8fafc; }
+    .map-wrap img { width: 100%; height: auto; display: block; }
+    .map-fallback { display: block; }
+    .legend { display: flex; gap: 12px; flex-wrap: wrap; padding: 7px 9px; font-size: 8px; color: #475569; border-top: 1px solid #e2e8f0; }
+    .legend i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; }
+    .budget-table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+    .budget-table th, .budget-table td { border-bottom: 1px solid #e2e8f0; padding: 7px 6px; text-align: left; }
+    .budget-table th { background: #f1f5f9; color: #475569; font-weight: 500; }
+    .budget-table td.num, .budget-table th.num { text-align: right; }
+    .budget-total td { font-weight: 700; border-top: 1px solid #172033; }
+    .day-summary { margin-top: 13px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .day-summary-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; background: #f8fafc; }
+    .day-summary-card span { color: #0f766e; font-size: 7.5px; letter-spacing: .1em; }
+    .day-summary-card b { display: block; font-size: 10.5px; margin-top: 3px; }
+    .day-summary-card small { display: block; color: #94a3b8; font-size: 8px; margin-top: 2px; }
+    .day { page-break-before: always; }
+    .day-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 8px; }
+    .day-head h3 { margin: 0; font-size: 20px; }
+    .day-head .date { color: #64748b; font-size: 9px; }
+    .day-theme { font-size: 10px; color: #0f766e; margin-bottom: 10px; }
+    .day-map { margin: 8px 0 12px; }
+    .timeline { position: relative; margin-left: 7px; padding-left: 18px; border-left: 2px solid #e2e8f0; }
+    .item { position: relative; margin-bottom: 11px; padding: 9px 11px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; page-break-inside: avoid; }
+    .item::before { content: ""; position: absolute; left: -25px; top: 14px; width: 9px; height: 9px; border-radius: 50%; background: var(--c, #2563eb); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--c, #2563eb); }
+    .item-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+    .item-title { font-size: 11.5px; font-weight: 600; }
+    .item-time { color: #475569; font-size: 9px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .item-meta { margin-top: 3px; color: #64748b; font-size: 8.5px; line-height: 1.6; }
+    .item-note { margin-top: 3px; color: #0f766e; font-size: 8.5px; }
+    .tag { display: inline-block; font-size: 7.5px; padding: 1px 5px; border-radius: 4px; background: #f1f5f9; color: #475569; margin-right: 4px; }
+    .price { font-size: 9px; color: #b45309; white-space: nowrap; }
+    .tips { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; background: #f8fafc; font-size: 9px; line-height: 1.8; color: #475569; }
+    .footer { margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 7px; color: #94a3b8; font-size: 7.5px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <section class="cover">
+    <div class="kicker">SMART TRAVEL · CHINA</div>
+    <h1>{{ trip.title }}</h1>
+    <div class="sub">
+      {{ trip.startDate }} — {{ trip.endDate }} · {{ trip['days']|length }} 天 ·
+      {{ trip.meta.travelers.adults }} 位成人{% if trip.meta.travelers.children %} · {{ trip.meta.travelers.children }} 位儿童{% endif %}
+    </div>
+    <div class="meta">
+      <div><small>目的地</small><b>{{ trip.destination.city }}</b></div>
+      <div><small>预算合计</small><b>¥{{ (trip.budget.totalCents / 100)|round(0)|int }}</b></div>
+      <div><small>人均</small><b>¥{{ (trip.budget.perPersonCents / 100)|round(0)|int }}</b></div>
+      <div><small>生成方式</small><b>{% if trip.meta.llm %}AI 规划{% else %}规则规划{% endif %}</b></div>
+    </div>
+    <div class="cover-days">
+      {% for day in trip.days %}
+      <div class="cover-day">
+        <span>DAY {{ day.dayIndex }}</span>
+        <b>{{ day.theme }}</b>
+        <small>{{ day.date }}</small>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="bottom">
+      本行程由智能旅行助手生成，价格为参考估算，不构成预订承诺。<br/>
+      景点开放时间、门票与交通班次请以官方渠道为准。
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title"><h2>行程总览</h2><span>OVERVIEW</span></div>
+    <div class="overview">
+      <div class="stat"><small>天数</small><b>{{ trip['days']|length }} 天</b></div>
+      <div class="stat"><small>景点 / 餐饮</small><b>{{ stats.attractions }} / {{ stats.meals }}</b></div>
+      <div class="stat"><small>住宿</small><b>{{ stats.hotels }} 晚</b></div>
+      <div class="stat"><small>路线段</small><b>{{ trip['routes']|length }} 段</b></div>
+    </div>
+
+    <div class="map-wrap">
+      {% if map_url %}
+      <img src="{{ map_url }}" alt="行程地图" onerror="this.style.display='none';document.getElementById('fallback-map').style.display='block'" />
+      <div id="fallback-map" class="map-fallback" style="display:none">{{ map_svg|safe }}</div>
+      {% else %}
+      <div class="map-fallback">{{ map_svg|safe }}</div>
+      {% endif %}
+      <div class="legend">
+        <span style="color:#94a3b8">数字对应当天行程顺序</span>
+        {% for day in trip['days'] %}
+        <span><i style="background:{{ day.color }}"></i>Day {{ day.dayIndex }} · {{ day.theme }}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div style="margin-top:14px">
+      <div class="section-title"><h2>预算明细</h2><span>BUDGET · 参考价</span></div>
+      <table class="budget-table">
+        <thead><tr><th>分类</th><th class="num">金额</th><th>说明</th></tr></thead>
+        <tbody>
+          {% for c in trip.budget.categories %}
+          <tr><td>{{ c.label }}</td><td class="num">¥{{ (c.amountCents / 100)|round(2) }}</td><td>{{ c.note }}</td></tr>
+          {% endfor %}
+          <tr class="budget-total"><td>合计</td><td class="num">¥{{ (trip.budget.totalCents / 100)|round(2) }}</td><td>含 {{ (trip.budget.bufferRate * 100)|int }}% 机动缓冲</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:8px;color:#64748b;line-height:1.7;margin:7px 0 0">
+        {{ trip.budget.priceNote }} 城际交通：{{ trip.budget.transport.note }}。
+      </p>
+      <div class="day-summary">
+        {% for day in trip.days %}
+        <div class="day-summary-card">
+          <span>DAY {{ day.dayIndex }} · {{ day.date }}</span>
+          <b>{{ day.theme }}</b>
+          <small>{{ day['items']|length }} 个安排 · {{ day.summary }}</small>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {% for day in trip.days %}
+  <section class="section day">
+    <div class="day-head">
+      <div>
+        <div class="date">{{ day.date }} · DAY {{ day.dayIndex }}</div>
+        <h3>{{ day.theme }}</h3>
+      </div>
+      <div class="date">{{ day['items']|length }} 个安排</div>
+    </div>
+    <div class="day-theme">{{ day.summary }}</div>
+    <div class="day-map map-wrap">{{ day.map_svg|safe }}</div>
+    <div class="timeline">
+      {% for item in day['items'] %}
+      <div class="item" style="--c:{{ day.color }}">
+        <div class="item-top">
+          <div>
+            <span class="tag">{{ item.typeLabel }}</span>
+            <span class="item-title">{{ item.title }}</span>
+          </div>
+          <div class="item-time">{{ item.startTime }} — {{ item.endTime }}</div>
+        </div>
+        <div class="item-meta">
+          {{ item.address }}{% if item.rating %} · 评分 {{ item.rating }}{% endif %}
+          {% if item.cost.amountCents %} · <span class="price">¥{{ (item.cost.amountCents / 100)|round(2) }}{% if item.cost.basis == 'room_night' %}/间夜{% endif %}</span>{% endif %}
+        </div>
+        {% if item.notes %}<div class="item-note">{{ item.notes }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="tips">
+      <b>当天提示：</b>景点开放时间、预约要求和交通耗时请出发前再次确认；如遇闭馆或天气变化，可使用在线行程中的编辑功能调整。
+    </div>
+  </section>
+  {% endfor %}
+
+  <section class="section">
+    <div class="section-title"><h2>出行提示</h2><span>NOTES</span></div>
+    <div class="tips">
+      1. 本行程由 AI/规则引擎辅助生成，已将景点按地理位置聚类，但仍建议根据体力与天气调整节奏。<br/>
+      2. 门票、餐饮、酒店与交通均为参考估算，实际价格以商家或官方渠道为准。<br/>
+      3. 熊猫基地、博物馆等热门景点建议提前预约；火锅店晚市建议错峰或提前排号。<br/>
+      4. 城际交通查询：<a href="{{ trip.budget.transport.bookingUrl }}">{{ trip.budget.transport.bookingUrl }}</a><br/>
+      5. 生成时间：{{ generated_at }} · 行程版本：v{{ trip.version }}
+    </div>
+    <div class="footer">
+      智能旅行助手 · 行程仅供参考 · AIGC 内容标识 · 地图数据 © 高德地图
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
